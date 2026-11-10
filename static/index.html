@@ -384,18 +384,9 @@
         </div>
       </div>
 
-      <div class="options-grid">
-        <div class="options-row">
-          <input type="checkbox" id="colorizeOption" />
-          <label for="colorizeOption">Colorize B&amp;W photo</label>
-        </div>
-
-        <div class="form-group">
-          <select id="modelSelect">
-            <option value="gfpgan_1.4" selected>Model: GFPGAN 1.4</option>
-            <option value="codeformer">Model: CodeFormer</option>
-          </select>
-        </div>
+      <div class="options-row" style="margin-top: 4px;">
+        <input type="checkbox" id="colorizeOption" />
+        <label for="colorizeOption">Colorize B&amp;W photo</label>
       </div>
 
       <button type="submit" class="submit-btn" id="submitBtn">Enhance photo</button>
@@ -522,7 +513,6 @@
       const resultsContainer = document.getElementById('resultsContainer');
       const apiKey = document.getElementById('apiKey').value.trim();
       const colorize = document.getElementById('colorizeOption').checked;
-      const model = document.getElementById('modelSelect').value;
 
       submitBtn.disabled = true;
       submitBtn.innerText = "Enhancing photo...";
@@ -534,7 +524,7 @@
       const formData = new FormData();
       formData.append("file", selectedFile);
       if (apiKey) formData.append("api_key", apiKey);
-      formData.append("face_enhancer_model", model);
+      formData.append("face_enhancer_model", "gfpgan_1.4");
       formData.append("face_enhancer_blend", "80");
       formData.append("colorize", colorize ? "true" : "false");
       formData.append("response_format", "json");
