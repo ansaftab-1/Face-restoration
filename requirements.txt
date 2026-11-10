@@ -1,0 +1,13 @@
+gradio-rangeslider==0.0.8
+gradio==5.50.0
+numpy==2.2.3
+onnx==1.17.0
+onnxruntime==1.20.1
+opencv-python-headless==4.11.0.86
+tqdm==4.67.1
+scipy==1.15.2
+fastapi==0.115.8
+uvicorn==0.34.0
+python-multipart==0.0.20
+httpx==0.28.1
+pydantic==2.10.6

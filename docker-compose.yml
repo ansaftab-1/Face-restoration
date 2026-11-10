@@ -1,0 +1,31 @@
+services:
+  facefusion-api:
+    build: .
+    container_name: facefusion-api
+    restart: unless-stopped
+    command: ["python", "api_server.py"]
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./.assets:/app/.assets
+      - ./api_storage:/app/api_storage
+    environment:
+      - HOST=0.0.0.0
+      - PORT=8000
+      - MAX_CONCURRENT_JOBS=1
+      - FACEFUSION_MEMORY_STRATEGY=tolerant
+      # Optional: set an API key to protect your endpoints with X-API-Key header
+      - FACEFUSION_API_KEY=
+
+  facefusion-ui:
+    build: .
+    container_name: facefusion-ui
+    restart: unless-stopped
+    command: ["python", "facefusion.py", "run", "--execution-providers", "cpu"]
+    ports:
+      - "7860:7860"
+    volumes:
+      - ./.assets:/app/.assets
+    environment:
+      - GRADIO_SERVER_NAME=0.0.0.0
+      - GRADIO_SERVER_PORT=7860
