@@ -521,6 +521,37 @@ async def check_content_moderation(
     }
 
 
+@app.get("/api/v1/enhance/info", tags=["Photo Enhancement"])
+async def get_enhancement_info():
+    """Returns available face restoration, colorizer, and super-resolution model capabilities."""
+    from facefusion.processors.modules.face_enhancer import choices as enhancer_choices
+    from facefusion.processors.modules.frame_colorizer import choices as colorizer_choices
+    from facefusion.processors.modules.frame_enhancer import choices as superres_choices
+
+    return {
+        "status": "ready",
+        "service": "Photo Restoration & Enhancement Engine",
+        "default_models": {
+            "face_enhancer": "gfpgan_1.4",
+            "frame_colorizer": "ddcolor",
+            "frame_enhancer": "span_kendata_x4",
+        },
+        "supported_models": {
+            "face_enhancer": list(enhancer_choices.face_enhancer_models),
+            "frame_colorizer": list(colorizer_choices.frame_colorizer_models),
+            "frame_enhancer": list(superres_choices.frame_enhancer_models),
+        },
+        "hardware_acceleration": {
+            "active_providers": DEFAULT_PROVIDERS,
+            "available_providers": AVAILABLE_PROVIDERS,
+        },
+        "limits": {
+            "max_file_size_mb": 50,
+            "supported_extensions": [".jpg", ".jpeg", ".png", ".webp", ".bmp"],
+        },
+    }
+
+
 @app.post("/api/v1/enhance/photo", tags=["Photo Enhancement"])
 async def enhance_photo_instant(
     request: Request,
