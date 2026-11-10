@@ -21,12 +21,12 @@
       flex-direction: column;
       align-items: center;
       justify-content: flex-start;
-      padding: 60px 20px;
+      padding: 50px 20px;
     }
 
     .container {
       width: 100%;
-      max-width: 520px;
+      max-width: 560px;
       display: flex;
       flex-direction: column;
       gap: 18px;
@@ -37,13 +37,13 @@
       font-weight: 700;
       letter-spacing: -0.5px;
       color: #000000;
-      margin-bottom: 4px;
+      margin-bottom: 2px;
     }
 
     .subtitle {
       font-size: 15px;
       color: #4b5563;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
     }
 
     .form-group {
@@ -52,7 +52,7 @@
       gap: 6px;
     }
 
-    input[type="text"], input[type="password"] {
+    input[type="text"], input[type="password"], select {
       width: 100%;
       padding: 10px 14px;
       font-size: 15px;
@@ -64,42 +64,76 @@
       transition: border-color 0.15s ease;
     }
 
-    input[type="text"]:focus, input[type="password"]:focus {
+    input[type="text"]:focus, input[type="password"]:focus, select:focus {
       border-color: #000000;
     }
 
-    .file-input-wrapper {
+    /* Drag and Drop Zone */
+    .drop-zone {
+      border: 2px dashed #9ca3af;
+      border-radius: 6px;
+      padding: 24px 16px;
+      text-align: center;
+      cursor: pointer;
+      background: #fafafa;
+      transition: background-color 0.15s ease, border-color 0.15s ease;
       display: flex;
+      flex-direction: column;
       align-items: center;
-      gap: 12px;
-      margin-top: 4px;
+      gap: 8px;
+    }
+
+    .drop-zone:hover, .drop-zone.dragover {
+      background: #f3f4f6;
+      border-color: #000000;
+    }
+
+    .drop-zone-text {
+      font-size: 14px;
+      color: #4b5563;
+    }
+
+    .drop-zone-text span {
+      font-weight: 600;
+      color: #111827;
+      text-decoration: underline;
     }
 
     input[type="file"] {
+      display: none;
+    }
+
+    .preview-thumb-container {
+      display: none;
+      width: 100%;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 12px;
+      background: #f3f4f6;
+      border-radius: 4px;
       font-size: 14px;
       color: #374151;
     }
 
-    input[type="file"]::file-selector-button {
-      padding: 7px 14px;
-      font-size: 14px;
-      background-color: #f3f4f6;
-      border: 1px solid #9ca3af;
-      border-radius: 3px;
-      color: #111827;
-      cursor: pointer;
-      transition: background-color 0.15s ease;
+    .preview-thumb-name {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 80%;
+      font-weight: 500;
     }
 
-    input[type="file"]::file-selector-button:hover {
-      background-color: #e5e7eb;
+    .options-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 2px;
     }
 
     .options-row {
       display: flex;
       align-items: center;
-      gap: 10px;
-      margin-top: 4px;
+      gap: 8px;
       font-size: 14px;
       color: #374151;
     }
@@ -117,7 +151,7 @@
 
     .submit-btn {
       width: 100%;
-      padding: 11px 16px;
+      padding: 12px 16px;
       font-size: 15px;
       font-weight: 500;
       color: #000000;
@@ -125,7 +159,7 @@
       border: 1px solid #9ca3af;
       border-radius: 4px;
       cursor: pointer;
-      margin-top: 6px;
+      margin-top: 4px;
       transition: background-color 0.15s ease, border-color 0.15s ease;
     }
 
@@ -174,60 +208,120 @@
       color: #991b1b;
     }
 
+    /* Interactive Comparison Slider */
     .results-container {
       display: none;
-      margin-top: 24px;
+      margin-top: 18px;
       width: 100%;
-      display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: 14px;
     }
 
-    .preview-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
-    }
-
-    @media (max-width: 520px) {
-      .preview-grid {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    .preview-card {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .preview-card h3 {
-      font-size: 13px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      color: #6b7280;
-    }
-
-    .preview-card img {
+    .comparison-wrapper {
+      position: relative;
       width: 100%;
-      height: 240px;
-      object-fit: cover;
+      height: 380px;
+      overflow: hidden;
       border-radius: 6px;
-      border: 1px solid #e5e7eb;
-      background-color: #f9fafb;
+      border: 1px solid #d1d5db;
+      user-select: none;
+    }
+
+    .comparison-wrapper img {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      background: #111827;
+    }
+
+    .img-before-wrapper {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 50%;
+      height: 100%;
+      overflow: hidden;
+      z-index: 2;
+    }
+
+    .img-before-wrapper img {
+      width: 100%;
+      min-width: 100%;
+    }
+
+    .slider-handle {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 50%;
+      width: 3px;
+      background: #ffffff;
+      z-index: 3;
+      cursor: ew-resize;
+      box-shadow: 0 0 8px rgba(0,0,0,0.5);
+    }
+
+    .slider-circle {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 32px;
+      height: 32px;
+      background: #ffffff;
+      border: 2px solid #111827;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 700;
+      color: #111827;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    }
+
+    .slider-badge-before {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      background: rgba(0,0,0,0.65);
+      color: #ffffff;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 4px 8px;
+      border-radius: 4px;
+      z-index: 4;
+      text-transform: uppercase;
+    }
+
+    .slider-badge-after {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      background: rgba(0,0,0,0.65);
+      color: #ffffff;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 4px 8px;
+      border-radius: 4px;
+      z-index: 4;
+      text-transform: uppercase;
     }
 
     .action-row {
       display: flex;
       gap: 10px;
-      margin-top: 8px;
+      margin-top: 4px;
     }
 
     .download-btn {
       flex: 1;
       text-align: center;
       text-decoration: none;
-      padding: 10px 14px;
+      padding: 11px 14px;
       background-color: #111827;
       color: #ffffff;
       border-radius: 4px;
@@ -241,7 +335,7 @@
     }
 
     .reset-btn {
-      padding: 10px 14px;
+      padding: 11px 16px;
       background-color: #f3f4f6;
       color: #374151;
       border: 1px solid #d1d5db;
@@ -271,21 +365,37 @@
         />
       </div>
 
-      <div class="form-group" style="margin-top: 10px;">
-        <div class="file-input-wrapper">
-          <input 
-            type="file" 
-            id="photoFile" 
-            accept="image/jpeg,image/png,image/webp,image/bmp" 
-            required
-            onchange="handleFileSelect(event)"
-          />
+      <div class="form-group" style="margin-top: 6px;">
+        <div class="drop-zone" id="dropZone" onclick="document.getElementById('photoFile').click()">
+          <div class="drop-zone-text">
+            <span>Choose a photo</span> or drag &amp; drop here (.jpg, .png, .webp)
+          </div>
+        </div>
+        <input 
+          type="file" 
+          id="photoFile" 
+          accept="image/jpeg,image/png,image/webp,image/bmp" 
+          onchange="handleFileSelect(event)"
+        />
+
+        <div id="previewThumb" class="preview-thumb-container">
+          <div id="previewFileName" class="preview-thumb-name"></div>
+          <span style="cursor: pointer; color: #ef4444; font-weight: 600;" onclick="removeFile(event)">&times;</span>
         </div>
       </div>
 
-      <div class="options-row">
-        <input type="checkbox" id="colorizeOption" />
-        <label for="colorizeOption">Colorize Black &amp; White photo</label>
+      <div class="options-grid">
+        <div class="options-row">
+          <input type="checkbox" id="colorizeOption" />
+          <label for="colorizeOption">Colorize B&amp;W photo</label>
+        </div>
+
+        <div class="form-group">
+          <select id="modelSelect">
+            <option value="gfpgan_1.4" selected>Model: GFPGAN 1.4</option>
+            <option value="codeformer">Model: CodeFormer</option>
+          </select>
+        </div>
       </div>
 
       <button type="submit" class="submit-btn" id="submitBtn">Enhance photo</button>
@@ -293,15 +403,17 @@
 
     <div id="statusBox" class="status-box"></div>
 
-    <div id="resultsContainer" class="results-container" style="display: none;">
-      <div class="preview-grid">
-        <div class="preview-card">
-          <h3>Original</h3>
-          <img id="originalImg" src="" alt="Original Photo" />
+    <div id="resultsContainer" class="results-container">
+      <div class="comparison-wrapper" id="comparisonWrapper">
+        <span class="slider-badge-before">Original</span>
+        <span class="slider-badge-after">Restored</span>
+
+        <img id="imgAfter" src="" alt="Restored Photo" />
+        <div class="img-before-wrapper" id="imgBeforeWrapper">
+          <img id="imgBefore" src="" alt="Original Photo" />
         </div>
-        <div class="preview-card">
-          <h3>Enhanced</h3>
-          <img id="enhancedImg" src="" alt="Enhanced Photo" />
+        <div class="slider-handle" id="sliderHandle">
+          <div class="slider-circle">&#8596;</div>
         </div>
       </div>
 
@@ -317,14 +429,86 @@
   <script>
     let selectedFile = null;
 
+    const dropZone = document.getElementById('dropZone');
+    const photoFile = document.getElementById('photoFile');
+    const previewThumb = document.getElementById('previewThumb');
+    const previewFileName = document.getElementById('previewFileName');
+
+    // Drag and drop handlers
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.classList.add('dragover');
+    });
+
+    dropZone.addEventListener('dragleave', () => {
+      dropZone.classList.remove('dragover');
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('dragover');
+      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+        setSelectedFile(e.dataTransfer.files[0]);
+      }
+    });
+
     function handleFileSelect(e) {
-      const files = e.target.files;
-      if (files && files[0]) {
-        selectedFile = files[0];
-        const previewUrl = URL.createObjectURL(selectedFile);
-        document.getElementById('originalImg').src = previewUrl;
+      if (e.target.files && e.target.files[0]) {
+        setSelectedFile(e.target.files[0]);
       }
     }
+
+    function setSelectedFile(file) {
+      selectedFile = file;
+      previewFileName.innerText = file.name;
+      previewThumb.style.display = 'flex';
+      dropZone.style.display = 'none';
+
+      const previewUrl = URL.createObjectURL(selectedFile);
+      document.getElementById('imgBefore').src = previewUrl;
+    }
+
+    function removeFile(e) {
+      e.stopPropagation();
+      selectedFile = null;
+      photoFile.value = '';
+      previewThumb.style.display = 'none';
+      dropZone.style.display = 'flex';
+    }
+
+    // Comparison slider logic
+    const wrapper = document.getElementById('comparisonWrapper');
+    const beforeWrapper = document.getElementById('imgBeforeWrapper');
+    const handle = document.getElementById('sliderHandle');
+    let isSliding = false;
+
+    function updateSlider(x) {
+      const rect = wrapper.getBoundingClientRect();
+      let pos = (x - rect.left) / rect.width;
+      if (pos < 0.02) pos = 0.02;
+      if (pos > 0.98) pos = 0.98;
+
+      const pct = (pos * 100) + '%';
+      beforeWrapper.style.width = pct;
+      handle.style.left = pct;
+
+      // Keep before image full container width inside clipped wrapper
+      document.getElementById('imgBefore').style.width = rect.width + 'px';
+    }
+
+    wrapper.addEventListener('mousedown', () => isSliding = true);
+    window.addEventListener('mouseup', () => isSliding = false);
+    window.addEventListener('mousemove', (e) => {
+      if (!isSliding) return;
+      updateSlider(e.clientX);
+    });
+
+    wrapper.addEventListener('touchstart', () => isSliding = true);
+    window.addEventListener('touchend', () => isSliding = false);
+    window.addEventListener('touchmove', (e) => {
+      if (!isSliding || !e.touches[0]) return;
+      updateSlider(e.touches[0].clientX);
+    });
 
     async function handleEnhance(e) {
       e.preventDefault();
@@ -338,29 +522,26 @@
       const resultsContainer = document.getElementById('resultsContainer');
       const apiKey = document.getElementById('apiKey').value.trim();
       const colorize = document.getElementById('colorizeOption').checked;
+      const model = document.getElementById('modelSelect').value;
 
       submitBtn.disabled = true;
       submitBtn.innerText = "Enhancing photo...";
       statusBox.style.display = "flex";
       statusBox.className = "status-box status-loading";
-      statusBox.innerHTML = '<div class="spinner"></div><span>Restoring facial details &amp; clarity... please wait (~2-3 seconds)</span>';
+      statusBox.innerHTML = '<div class="spinner"></div><span>Restoring facial details &amp; clarity...</span>';
       resultsContainer.style.display = "none";
 
       const formData = new FormData();
       formData.append("file", selectedFile);
-      if (apiKey) {
-        formData.append("api_key", apiKey);
-      }
-      formData.append("face_enhancer_model", "gfpgan_1.4");
+      if (apiKey) formData.append("api_key", apiKey);
+      formData.append("face_enhancer_model", model);
       formData.append("face_enhancer_blend", "80");
       formData.append("colorize", colorize ? "true" : "false");
       formData.append("response_format", "json");
 
       try {
         const headers = {};
-        if (apiKey) {
-          headers["X-API-Key"] = apiKey;
-        }
+        if (apiKey) headers["X-API-Key"] = apiKey;
 
         const response = await fetch("/api/v1/enhance/photo", {
           method: "POST",
@@ -377,10 +558,18 @@
         statusBox.style.display = "none";
         resultsContainer.style.display = "flex";
 
-        document.getElementById('enhancedImg').src = data.download_url + "?t=" + Date.now();
+        document.getElementById('imgAfter').src = data.download_url + "?t=" + Date.now();
         document.getElementById('downloadBtn').href = data.download_url;
         document.getElementById('downloadBtn').download = "enhanced_" + selectedFile.name;
-        document.getElementById('timeInfo').innerText = `Completed in ${data.processing_time_seconds}s`;
+        document.getElementById('timeInfo').innerText = `Restored in ${data.processing_time_seconds}s`;
+
+        // Reset slider to middle
+        beforeWrapper.style.width = '50%';
+        handle.style.left = '50%';
+        setTimeout(() => {
+          const rect = wrapper.getBoundingClientRect();
+          document.getElementById('imgBefore').style.width = rect.width + 'px';
+        }, 100);
 
       } catch (err) {
         statusBox.style.display = "block";
@@ -395,10 +584,12 @@
     function resetForm() {
       document.getElementById('enhanceForm').reset();
       selectedFile = null;
+      photoFile.value = '';
+      previewThumb.style.display = 'none';
+      dropZone.style.display = 'flex';
       document.getElementById('resultsContainer').style.display = "none";
       document.getElementById('statusBox').style.display = "none";
     }
   </script>
 </body>
 </html>
-
