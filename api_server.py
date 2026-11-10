@@ -26,7 +26,7 @@ import onnxruntime
 import uvicorn
 from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, Query, Request, UploadFile, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -49,8 +49,9 @@ API_STORAGE_DIR = BASE_DIR / "api_storage"
 UPLOADS_DIR = API_STORAGE_DIR / "uploads"
 OUTPUTS_DIR = API_STORAGE_DIR / "outputs"
 MODELS_DIR = BASE_DIR / ".assets" / "models"
+STATIC_DIR = BASE_DIR / "static"
 
-for d in (UPLOADS_DIR, OUTPUTS_DIR, MODELS_DIR):
+for d in (UPLOADS_DIR, OUTPUTS_DIR, MODELS_DIR, STATIC_DIR):
     d.mkdir(parents=True, exist_ok=True)
 
 API_KEY = os.getenv("FACEFUSION_API_KEY", "").strip()
@@ -169,21 +170,35 @@ def execute_facefusion_job_sync(job_params: Dict[str, Any]) -> Dict[str, Any]:
     """
     start_time = time.perf_counter()
 
-    processors = ["face_swapper"]
-    if job_params.get("enhance_face"):
-        processors.append("face_enhancer")
+    processors = job_params.get("processors")
+    if not processors:
+        processors = ["face_swapper"]
+        if job_params.get("enhance_face"):
+            processors.append("face_enhancer")
 
     face_mask_types = ["box", "occlusion"] if job_params.get("occlusion_mask", True) else ["box"]
+    source_paths = [job_params["source_path"]] if job_params.get("source_path") else []
 
     # Configure state_manager for this job
-    state_manager.set_item("source_paths", [job_params["source_path"]])
+    state_manager.set_item("source_paths", source_paths)
     state_manager.set_item("target_path", job_params["target_path"])
     state_manager.set_item("output_path", job_params["output_path"])
     state_manager.set_item("processors", processors)
-    state_manager.set_item("face_swapper_model", job_params.get("face_swapper_model", "inswapper_128_fp16"))
-    state_manager.set_item("face_swapper_pixel_boost", job_params.get("face_swapper_pixel_boost", "128x128"))
-    state_manager.set_item("face_enhancer_model", job_params.get("face_enhancer_model", "gfpgan_1.4"))
-    state_manager.set_item("face_enhancer_blend", int(job_params.get("face_enhancer_blend", 80)))
+    state_manager.set_item("face_selector_mode", job_params.get("face_selector_mode", "many" if not source_paths else "reference"))
+    if "face_swapper" in processors:
+        state_manager.set_item("face_swapper_model", job_params.get("face_swapper_model", "inswapper_128_fp16"))
+        state_manager.set_item("face_swapper_pixel_boost", job_params.get("face_swapper_pixel_boost", "128x128"))
+    if "face_enhancer" in processors:
+        state_manager.set_item("face_enhancer_model", job_params.get("face_enhancer_model", "gfpgan_1.4"))
+        state_manager.set_item("face_enhancer_blend", int(job_params.get("face_enhancer_blend", 80)))
+    if "frame_colorizer" in processors:
+        state_manager.set_item("frame_colorizer_model", job_params.get("frame_colorizer_model", "ddcolor"))
+        state_manager.set_item("frame_colorizer_blend", int(job_params.get("frame_colorizer_blend", 100)))
+        state_manager.set_item("frame_colorizer_size", job_params.get("frame_colorizer_size", "256x256"))
+    if "frame_enhancer" in processors:
+        state_manager.set_item("frame_enhancer_model", job_params.get("frame_enhancer_model", "span_kendata_x4"))
+        state_manager.set_item("frame_enhancer_blend", int(job_params.get("frame_enhancer_blend", 100)))
+
     state_manager.set_item("face_mask_types", face_mask_types)
     state_manager.set_item("workflow_mode", "auto")
     state_manager.set_item("execution_providers", job_params.get("execution_providers") or DEFAULT_PROVIDERS)
@@ -317,6 +332,8 @@ app.add_middleware(
 )
 
 app.mount("/outputs", StaticFiles(directory=str(OUTPUTS_DIR)), name="outputs")
+app.mount("/uploads", StaticFiles(directory=str(UPLOADS_DIR)), name="uploads")
+app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
 
 # ------------------------------------------------------------------------------
@@ -389,9 +406,20 @@ def save_upload_file(upload: UploadFile, prefix: str) -> str:
 # ------------------------------------------------------------------------------
 # Endpoints
 # ------------------------------------------------------------------------------
-@app.get("/", include_in_schema=False)
-async def root_redirect():
+@app.get("/", response_class=HTMLResponse, include_in_schema=False)
+async def serve_index():
+    index_file = STATIC_DIR / "index.html"
+    if index_file.is_file():
+        return HTMLResponse(content=index_file.read_text(encoding="utf-8"))
     return RedirectResponse(url="/docs")
+
+
+@app.get("/facefusion.ico", include_in_schema=False)
+async def favicon():
+    ico_path = BASE_DIR / "facefusion.ico"
+    if ico_path.is_file():
+        return FileResponse(str(ico_path), media_type="image/x-icon")
+    raise HTTPException(status_code=404)
 
 
 @app.get("/api/v1/health", response_model=HealthResponse, tags=["System"])
@@ -491,6 +519,114 @@ async def check_content_moderation(
         "message": result.get("message"),
         "models": result.get("models"),
     }
+
+
+@app.post("/api/v1/enhance/photo", tags=["Photo Enhancement"])
+async def enhance_photo_instant(
+    request: Request,
+    file: UploadFile = File(..., description="Photo to restore and enhance (.jpg, .jpeg, .png, .webp, .bmp)"),
+    api_key: Optional[str] = Form(None, description="API Key (can also be passed in X-API-Key header)"),
+    face_enhancer_model: str = Form("gfpgan_1.4", description="Face restoration model"),
+    face_enhancer_blend: int = Form(80, description="Enhancement blend percentage (0-100)"),
+    colorize: bool = Form(False, description="Enable photo colorization for B&W photos (DDColor)"),
+    upscale: bool = Form(False, description="Enable whole-image super-resolution (SPAN x4)"),
+    response_format: Literal["json", "file", "base64"] = Form("json"),
+    x_api_key: Optional[str] = Header(default=None, alias="X-API-Key"),
+):
+    """
+    **Instant Photo Restoration & Enhancement Endpoint.**
+    Upload an old, blurry, or low-resolution photo.
+    Restores facial details (GFPGAN), optionally colorizes B&W photos, and upscales resolution.
+    """
+    provided_key = (x_api_key or api_key or "").strip()
+    if API_KEY and provided_key != API_KEY:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or missing API key.",
+        )
+
+    job_id = f"photo_{uuid.uuid4().hex[:12]}"
+    target_path = save_upload_file(file, f"{job_id}_raw")
+    target_ext = Path(target_path).suffix.lower()
+
+    if target_ext not in [".jpg", ".jpeg", ".png", ".webp", ".bmp"]:
+        if os.path.isfile(target_path):
+            os.remove(target_path)
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unsupported image format '{target_ext}'. Only .jpg, .png, .webp, .bmp are supported.",
+        )
+
+    # 18+ / NSFW Upload Gate
+    async with INFERENCE_LOCK:
+        mod_check = await asyncio.to_thread(
+            content_moderation.check_media_18_plus,
+            target_path,
+            None,
+            None,
+            True,
+        )
+
+    if mod_check["is_18_plus"]:
+        if os.path.isfile(target_path):
+            os.remove(target_path)
+        return JSONResponse(
+            status_code=status.HTTP_403_FORBIDDEN,
+            content={
+                "status": "rejected",
+                "restricted_18_plus": True,
+                "message": content_moderation.REJECTION_MESSAGE,
+            },
+        )
+
+    output_filename = f"{job_id}_enhanced{target_ext}"
+    output_path = str(OUTPUTS_DIR / output_filename)
+
+    processors = ["face_enhancer"]
+    if colorize:
+        processors.append("frame_colorizer")
+    if upscale:
+        processors.append("frame_enhancer")
+
+    job_params = {
+        "source_path": None,
+        "target_path": target_path,
+        "output_path": output_path,
+        "processors": processors,
+        "face_selector_mode": "many",
+        "face_enhancer_model": face_enhancer_model,
+        "face_enhancer_blend": face_enhancer_blend,
+        "frame_colorizer_model": "ddcolor",
+        "frame_enhancer_model": "span_kendata_x4",
+    }
+
+    async with INFERENCE_LOCK:
+        result = await asyncio.to_thread(execute_facefusion_job_sync, job_params)
+
+    if not result["success"]:
+        status_code = status.HTTP_403_FORBIDDEN if result.get("error_code") == 3 else status.HTTP_422_UNPROCESSABLE_ENTITY
+        raise HTTPException(status_code=status_code, detail=result)
+
+    if response_format == "file":
+        media_type = "image/png" if target_ext == ".png" else "image/jpeg"
+        return FileResponse(output_path, media_type=media_type, filename=output_filename)
+
+    base_url = str(request.base_url).rstrip("/")
+    payload: Dict[str, Any] = {
+        "job_id": job_id,
+        "status": "completed",
+        "processing_time_seconds": result["processing_time_seconds"],
+        "download_url": f"{base_url}/outputs/{output_filename}",
+        "relative_url": f"/outputs/{output_filename}",
+        "original_url": f"{base_url}/uploads/{Path(target_path).name}",
+        "processors": processors,
+    }
+
+    if response_format == "base64":
+        with open(output_path, "rb") as f:
+            payload["image_base64"] = base64.b64encode(f.read()).decode("utf-8")
+
+    return JSONResponse(content=payload)
 
 
 @app.post("/api/v1/swap/image", tags=["Instant Face Swap"], dependencies=[Depends(verify_api_key)])

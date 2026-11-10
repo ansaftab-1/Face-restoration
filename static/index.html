@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Photo Enhancer</title>
+  <link rel="icon" type="image/x-icon" href="/facefusion.ico" />
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    body {
+      background-color: #ffffff;
+      color: #111827;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 60px 20px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 520px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    h1 {
+      font-size: 32px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      color: #000000;
+      margin-bottom: 4px;
+    }
+
+    .subtitle {
+      font-size: 15px;
+      color: #4b5563;
+      margin-bottom: 8px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    input[type="text"], input[type="password"] {
+      width: 100%;
+      padding: 10px 14px;
+      font-size: 15px;
+      border: 1px solid #9ca3af;
+      border-radius: 4px;
+      outline: none;
+      background: #ffffff;
+      color: #111827;
+      transition: border-color 0.15s ease;
+    }
+
+    input[type="text"]:focus, input[type="password"]:focus {
+      border-color: #000000;
+    }
+
+    .file-input-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 4px;
+    }
+
+    input[type="file"] {
+      font-size: 14px;
+      color: #374151;
+    }
+
+    input[type="file"]::file-selector-button {
+      padding: 7px 14px;
+      font-size: 14px;
+      background-color: #f3f4f6;
+      border: 1px solid #9ca3af;
+      border-radius: 3px;
+      color: #111827;
+      cursor: pointer;
+      transition: background-color 0.15s ease;
+    }
+
+    input[type="file"]::file-selector-button:hover {
+      background-color: #e5e7eb;
+    }
+
+    .options-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 4px;
+      font-size: 14px;
+      color: #374151;
+    }
+
+    .options-row input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+    }
+
+    .options-row label {
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .submit-btn {
+      width: 100%;
+      padding: 11px 16px;
+      font-size: 15px;
+      font-weight: 500;
+      color: #000000;
+      background-color: #e5e7eb;
+      border: 1px solid #9ca3af;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-top: 6px;
+      transition: background-color 0.15s ease, border-color 0.15s ease;
+    }
+
+    .submit-btn:hover:not(:disabled) {
+      background-color: #d1d5db;
+    }
+
+    .submit-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .status-box {
+      display: none;
+      padding: 12px 14px;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+
+    .status-loading {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background-color: #f9fafb;
+      border: 1px solid #d1d5db;
+      color: #374151;
+    }
+
+    .spinner {
+      width: 18px;
+      height: 18px;
+      border: 2px solid #e5e7eb;
+      border-top: 2px solid #111827;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .status-error {
+      background-color: #fef2f2;
+      border: 1px solid #f87171;
+      color: #991b1b;
+    }
+
+    .results-container {
+      display: none;
+      margin-top: 24px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .preview-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    @media (max-width: 520px) {
+      .preview-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .preview-card {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .preview-card h3 {
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #6b7280;
+    }
+
+    .preview-card img {
+      width: 100%;
+      height: 240px;
+      object-fit: cover;
+      border-radius: 6px;
+      border: 1px solid #e5e7eb;
+      background-color: #f9fafb;
+    }
+
+    .action-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 8px;
+    }
+
+    .download-btn {
+      flex: 1;
+      text-align: center;
+      text-decoration: none;
+      padding: 10px 14px;
+      background-color: #111827;
+      color: #ffffff;
+      border-radius: 4px;
+      font-size: 14px;
+      font-weight: 500;
+      transition: background-color 0.15s ease;
+    }
+
+    .download-btn:hover {
+      background-color: #000000;
+    }
+
+    .reset-btn {
+      padding: 10px 14px;
+      background-color: #f3f4f6;
+      color: #374151;
+      border: 1px solid #d1d5db;
+      border-radius: 4px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    .reset-btn:hover {
+      background-color: #e5e7eb;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h1>Photo Enhancer</h1>
+    <div class="subtitle">Upload an old or blurry photo to restore faces and enhance clarity.</div>
+
+    <form id="enhanceForm" onsubmit="handleEnhance(event)">
+      <div class="form-group">
+        <input 
+          type="text" 
+          id="apiKey" 
+          placeholder="API key (optional if not set on server)" 
+          autocomplete="off"
+        />
+      </div>
+
+      <div class="form-group" style="margin-top: 10px;">
+        <div class="file-input-wrapper">
+          <input 
+            type="file" 
+            id="photoFile" 
+            accept="image/jpeg,image/png,image/webp,image/bmp" 
+            required
+            onchange="handleFileSelect(event)"
+          />
+        </div>
+      </div>
+
+      <div class="options-row">
+        <input type="checkbox" id="colorizeOption" />
+        <label for="colorizeOption">Colorize Black &amp; White photo</label>
+      </div>
+
+      <button type="submit" class="submit-btn" id="submitBtn">Enhance photo</button>
+    </form>
+
+    <div id="statusBox" class="status-box"></div>
+
+    <div id="resultsContainer" class="results-container" style="display: none;">
+      <div class="preview-grid">
+        <div class="preview-card">
+          <h3>Original</h3>
+          <img id="originalImg" src="" alt="Original Photo" />
+        </div>
+        <div class="preview-card">
+          <h3>Enhanced</h3>
+          <img id="enhancedImg" src="" alt="Enhanced Photo" />
+        </div>
+      </div>
+
+      <div style="font-size: 13px; color: #6b7280; text-align: center;" id="timeInfo"></div>
+
+      <div class="action-row">
+        <a id="downloadBtn" class="download-btn" href="#" download>Download Enhanced Photo</a>
+        <button type="button" class="reset-btn" onclick="resetForm()">Enhance another</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let selectedFile = null;
+
+    function handleFileSelect(e) {
+      const files = e.target.files;
+      if (files && files[0]) {
+        selectedFile = files[0];
+        const previewUrl = URL.createObjectURL(selectedFile);
+        document.getElementById('originalImg').src = previewUrl;
+      }
+    }
+
+    async function handleEnhance(e) {
+      e.preventDefault();
+      if (!selectedFile) {
+        alert("Please choose a photo first.");
+        return;
+      }
+
+      const submitBtn = document.getElementById('submitBtn');
+      const statusBox = document.getElementById('statusBox');
+      const resultsContainer = document.getElementById('resultsContainer');
+      const apiKey = document.getElementById('apiKey').value.trim();
+      const colorize = document.getElementById('colorizeOption').checked;
+
+      submitBtn.disabled = true;
+      submitBtn.innerText = "Enhancing photo...";
+      statusBox.style.display = "flex";
+      statusBox.className = "status-box status-loading";
+      statusBox.innerHTML = '<div class="spinner"></div><span>Restoring facial details &amp; clarity... please wait (~2-3 seconds)</span>';
+      resultsContainer.style.display = "none";
+
+      const formData = new FormData();
+      formData.append("file", selectedFile);
+      if (apiKey) {
+        formData.append("api_key", apiKey);
+      }
+      formData.append("face_enhancer_model", "gfpgan_1.4");
+      formData.append("face_enhancer_blend", "80");
+      formData.append("colorize", colorize ? "true" : "false");
+      formData.append("response_format", "json");
+
+      try {
+        const headers = {};
+        if (apiKey) {
+          headers["X-API-Key"] = apiKey;
+        }
+
+        const response = await fetch("/api/v1/enhance/photo", {
+          method: "POST",
+          headers: headers,
+          body: formData,
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.detail?.message || data.detail || (typeof data.detail === "object" ? JSON.stringify(data.detail) : "Enhancement failed."));
+        }
+
+        statusBox.style.display = "none";
+        resultsContainer.style.display = "flex";
+
+        document.getElementById('enhancedImg').src = data.download_url + "?t=" + Date.now();
+        document.getElementById('downloadBtn').href = data.download_url;
+        document.getElementById('downloadBtn').download = "enhanced_" + selectedFile.name;
+        document.getElementById('timeInfo').innerText = `Completed in ${data.processing_time_seconds}s`;
+
+      } catch (err) {
+        statusBox.style.display = "block";
+        statusBox.className = "status-box status-error";
+        statusBox.innerText = "Error: " + err.message;
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerText = "Enhance photo";
+      }
+    }
+
+    function resetForm() {
+      document.getElementById('enhanceForm').reset();
+      selectedFile = null;
+      document.getElementById('resultsContainer').style.display = "none";
+      document.getElementById('statusBox').style.display = "none";
+    }
+  </script>
+</body>
+</html>

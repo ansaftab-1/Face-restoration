@@ -1,8 +1,10 @@
 @echo off
-title FaceFusion 3.9.2 - Scalable FastAPI REST Server (Port 8000)
+title Photo Enhancer & Face Restoration Server (Port 8000)
 cd /d "%~dp0"
-echo Starting FaceFusion Scalable FastAPI Server on http://localhost:8000 ...
-echo Interactive Swagger API Docs: http://localhost:8000/docs
-".venv\Scripts\python.exe" api_server.py
+set "PATH=%~dp0.venv\Scripts;%PATH%"
+echo Starting Photo Enhancer Server on http://localhost:8000 ...
+echo Opening http://localhost:8000 in your browser...
+start http://localhost:8000
+uv run python api_server.py
 pause
 
