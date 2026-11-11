@@ -13,7 +13,10 @@ A state-of-the-art **AI Photo Restoration & Enhancement** platform built on **Fa
 
 * **🧑‍🦰 AI Face Restoration:** Uses **GFPGAN 1.4** & **CodeFormer** to repair facial tears, scratches, blurriness, and restore clear eyes, teeth, and natural skin texture.
 * **🎨 Old Photo Colorization:** Automatically predicts and applies natural colors to vintage black-and-white photos using **DDColor** deep learning prior.
-* **⚡ 1-Click Minimal Web Interface:** Clean, focused UI without confusing controls — just enter your API key, choose a photo, and click Enhance.
+* **✨ Color Vibrance Pop:** CLAHE dynamic contrast and selective vibrance boost to give faded vintage pictures deep, rich color tones.
+* **🌸 Skin & Beauty Retouching:** Subtle bilateral filter softly smooths skin grain, blemishes, and cracks while preserving sharp eyes and facial contours.
+* **🔍 4x Ultra HD Super-Resolution:** 4x spatial upscaling using **SPAN** deep learning super-resolution.
+* **⚡ 1-Click Minimal Web Interface:** Clean, focused UI without confusing controls — drag-and-drop before/after slider comparison.
 * **🚀 Fast Warm Inference REST API:** FastAPI backend keeps ONNX models warm in GPU/CPU memory for sub-second / 1-2s response times.
 * **☁️ Google Colab 1-Click Execution:** Run directly in the cloud on free NVIDIA T4 GPUs with zero local setup required.
 

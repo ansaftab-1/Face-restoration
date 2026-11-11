@@ -402,6 +402,44 @@ def serialize_job(job: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
+def enhance_beauty_and_vibrance(image_path: str, beauty_retouch: bool = False, vibrance_boost: bool = False) -> None:
+    """Post-processing enhancement for beauty skin smoothing and color vibrance pop."""
+    if not beauty_retouch and not vibrance_boost:
+        return
+    if not os.path.isfile(image_path):
+        return
+
+    try:
+        img = cv2.imread(image_path)
+        if img is None:
+            return
+
+        # 1. Beauty retouch: Edge-preserving bilateral skin softening
+        if beauty_retouch:
+            smooth = cv2.bilateralFilter(img, d=9, sigmaColor=35, sigmaSpace=35)
+            img = cv2.addWeighted(smooth, 0.65, img, 0.35, 0)
+
+        # 2. Vibrance & dynamic contrast boost
+        if vibrance_boost:
+            lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
+            l, a, b = cv2.split(lab)
+            clahe = cv2.createCLAHE(clipLimit=1.6, tileGridSize=(8, 8))
+            l_enhanced = clahe.apply(l)
+            lab = cv2.merge((l_enhanced, a, b))
+            img = cv2.cvtColor(lab, cv2.COLOR_LAB2BGR)
+
+            hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV).astype(numpy.float32)
+            h, s, v = cv2.split(hsv)
+            s_factor = 1.0 + 0.35 * (1.0 - (s / 255.0))
+            s = numpy.clip(s * s_factor, 0, 255)
+            hsv = cv2.merge((h, s, v))
+            img = cv2.cvtColor(hsv.astype(numpy.uint8), cv2.COLOR_HSV2BGR)
+
+        cv2.imwrite(image_path, img)
+    except Exception as exc:
+        logger.error(f"Beauty & Vibrance post-process error: {exc}", __name__)
+
+
 def save_upload_file(upload: UploadFile, prefix: str) -> str:
     ext = Path(upload.filename or "file.jpg").suffix.lower() or ".jpg"
     file_path = UPLOADS_DIR / f"{prefix}_{uuid.uuid4().hex[:10]}{ext}"
@@ -567,6 +605,8 @@ async def enhance_photo_instant(
     face_enhancer_model: str = Form("gfpgan_1.4", description="Face restoration model"),
     face_enhancer_blend: int = Form(80, description="Enhancement blend percentage (0-100)"),
     colorize: bool = Form(False, description="Enable photo colorization for B&W photos (DDColor)"),
+    vibrance_boost: bool = Form(False, description="Enable smart color vibrance and dynamic contrast boost"),
+    beauty_retouch: bool = Form(False, description="Enable gentle skin smoothing and blemish softening"),
     upscale: bool = Form(False, description="Enable whole-image super-resolution (SPAN x4)"),
     response_format: Literal["json", "file", "base64"] = Form("json"),
     x_api_key: Optional[str] = Header(default=None, alias="X-API-Key"),
@@ -620,9 +660,11 @@ async def enhance_photo_instant(
     output_filename = f"{job_id}_enhanced{target_ext}"
     output_path = str(OUTPUTS_DIR / output_filename)
 
-    # Normalize colorize and upscale flags from Form
+    # Normalize flags from Form
     is_colorize = str(colorize).lower() in ("true", "1", "yes", "on")
     is_upscale = str(upscale).lower() in ("true", "1", "yes", "on")
+    is_vibrance = str(vibrance_boost).lower() in ("true", "1", "yes", "on")
+    is_beauty = str(beauty_retouch).lower() in ("true", "1", "yes", "on")
 
     processors = []
     if is_colorize:
@@ -649,6 +691,10 @@ async def enhance_photo_instant(
     if not result["success"]:
         status_code = status.HTTP_403_FORBIDDEN if result.get("error_code") == 3 else status.HTTP_422_UNPROCESSABLE_ENTITY
         raise HTTPException(status_code=status_code, detail=result)
+
+    # Post-process: Optional Skin Beauty Retouch & Color Vibrance Boost
+    if (is_beauty or is_vibrance) and os.path.isfile(output_path):
+        await asyncio.to_thread(enhance_beauty_and_vibrance, output_path, is_beauty, is_vibrance)
 
     if response_format == "file":
         media_type = "image/png" if target_ext == ".png" else "image/jpeg"
@@ -750,6 +796,10 @@ async def swap_image_instant(
     if not result["success"]:
         status_code = status.HTTP_403_FORBIDDEN if result.get("error_code") == 3 else status.HTTP_422_UNPROCESSABLE_ENTITY
         raise HTTPException(status_code=status_code, detail=result)
+
+    # Post-process: Optional Skin Beauty Retouch & Color Vibrance Boost
+    if (is_beauty or is_vibrance) and os.path.isfile(output_path):
+        await asyncio.to_thread(enhance_beauty_and_vibrance, output_path, is_beauty, is_vibrance)
 
     if response_format == "file":
         media_type = "image/png" if target_ext == ".png" else "image/jpeg"

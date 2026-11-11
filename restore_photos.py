@@ -60,6 +60,21 @@ def parse_arguments() -> argparse.Namespace:
         help="Enable AI photo colorization for black-and-white photos.",
     )
     parser.add_argument(
+        "--vibrance",
+        action="store_true",
+        help="Boost color vibrance and dynamic contrast.",
+    )
+    parser.add_argument(
+        "--beauty",
+        action="store_true",
+        help="Enable skin beauty smoothing and blemish softening.",
+    )
+    parser.add_argument(
+        "--upscale",
+        action="store_true",
+        help="Enable 4x Ultra HD super-resolution upscaling.",
+    )
+    parser.add_argument(
         "--provider",
         choices=["cuda", "directml", "cpu", "auto"],
         default="auto",
@@ -85,15 +100,24 @@ def enhance_single_photo(
     model: str,
     blend: int,
     colorize: bool,
+    vibrance: bool,
+    beauty: bool,
+    upscale: bool,
     providers: List[str],
 ) -> bool:
-    processors = ["face_enhancer"]
+    processors = []
     if colorize:
         processors.append("frame_colorizer")
+    processors.append("face_enhancer")
+    if upscale:
+        processors.append("frame_enhancer")
 
     # Configure FaceFusion state_manager
     state_manager.init_item("command", "headless-run")
     state_manager.init_item("source_paths", [])
+    state_manager.init_item("download_providers", ["github", "huggingface"])
+    state_manager.init_item("download_scope", "lite")
+    state_manager.init_item("execution_device_ids", [0])
     state_manager.set_item("target_path", input_path)
     state_manager.set_item("output_path", output_path)
     state_manager.set_item("processors", processors)
@@ -107,13 +131,22 @@ def enhance_single_photo(
         state_manager.set_item("frame_colorizer_model", "ddcolor")
         state_manager.set_item("frame_colorizer_blend", 100)
         state_manager.set_item("frame_colorizer_size", "256x256")
+    if upscale:
+        state_manager.set_item("frame_enhancer_model", "span_kendata_x4")
+        state_manager.set_item("frame_enhancer_blend", 100)
 
     if not core.common_pre_check() or not core.processors_pre_check():
         print(f"[-] Pre-check failed for {input_path}")
         return False
 
     code = core.conditional_process()
-    return code == 0 and os.path.isfile(output_path)
+    success = code == 0 and os.path.isfile(output_path)
+
+    if success and (vibrance or beauty):
+        from api_server import enhance_beauty_and_vibrance
+        enhance_beauty_and_vibrance(output_path, beauty_retouch=beauty, vibrance_boost=vibrance)
+
+    return success
 
 
 def main() -> None:
@@ -133,6 +166,9 @@ def main() -> None:
             args.model,
             args.blend,
             args.colorize,
+            args.vibrance,
+            args.beauty,
+            args.upscale,
             providers,
         )
         if success:
@@ -159,6 +195,9 @@ def main() -> None:
                 args.model,
                 args.blend,
                 args.colorize,
+                args.vibrance,
+                args.beauty,
+                args.upscale,
                 providers,
             ):
                 succeeded += 1
