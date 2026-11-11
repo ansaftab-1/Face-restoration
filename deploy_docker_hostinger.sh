@@ -18,8 +18,22 @@ if ! command -v docker &> /dev/null; then
     apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 fi
 
-# 2. Go to directory
-cd /root/facefusion
+# 2. Go to project directory
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR"
+
+# 3. Ensure required AI models are present in .assets/models
+mkdir -p .assets/models
+if [ ! -f ".assets/models/ddcolor.onnx" ]; then
+    echo "📥 Downloading DDColor AI model (935MB)..."
+    wget -q -c https://github.com/facefusion/facefusion-assets/releases/download/models-3.0.0/ddcolor.onnx -O .assets/models/ddcolor.onnx || true
+    wget -q -c https://github.com/facefusion/facefusion-assets/releases/download/models-3.0.0/ddcolor.hash -O .assets/models/ddcolor.hash || true
+fi
+if [ ! -f ".assets/models/span_kendata_x4.onnx" ]; then
+    echo "📥 Downloading 4x Ultra HD SPAN model (1.7MB)..."
+    wget -q -c https://github.com/facefusion/facefusion-assets/releases/download/models-3.0.0/span_kendata_x4.onnx -O .assets/models/span_kendata_x4.onnx || true
+    wget -q -c https://github.com/facefusion/facefusion-assets/releases/download/models-3.0.0/span_kendata_x4.hash -O .assets/models/span_kendata_x4.hash || true
+fi
 
 # 3. Open Ports 8000 & 7860 on Firewall
 echo "🛡️ Opening Firewall Ports 8000 and 7860..."
