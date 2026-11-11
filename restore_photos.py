@@ -105,6 +105,11 @@ def enhance_single_photo(
     upscale: bool,
     providers: List[str],
 ) -> bool:
+    if colorize:
+        vibrance = True
+        beauty = True
+        upscale = True
+
     processors = []
     if colorize:
         processors.append("frame_colorizer")

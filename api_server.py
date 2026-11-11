@@ -666,6 +666,12 @@ async def enhance_photo_instant(
     is_vibrance = str(vibrance_boost).lower() in ("true", "1", "yes", "on")
     is_beauty = str(beauty_retouch).lower() in ("true", "1", "yes", "on")
 
+    # All-in-One Mode: Colorize automatically activates skin beauty retouch, vibrance pop, and 4x HD upscale
+    if is_colorize:
+        is_upscale = True
+        is_vibrance = True
+        is_beauty = True
+
     processors = []
     if is_colorize:
         processors.append("frame_colorizer")
