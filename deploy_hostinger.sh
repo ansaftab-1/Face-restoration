@@ -91,6 +91,10 @@ MODELS=(
     "nsfw_2.hash|https://github.com/facefusion/facefusion-assets/releases/download/models-3.3.0/nsfw_2.hash"
     "nsfw_3.onnx|https://github.com/facefusion/facefusion-assets/releases/download/models-3.3.0/nsfw_3.onnx"
     "nsfw_3.hash|https://github.com/facefusion/facefusion-assets/releases/download/models-3.3.0/nsfw_3.hash"
+    "ddcolor.onnx|https://github.com/facefusion/facefusion-assets/releases/download/models-3.0.0/ddcolor.onnx"
+    "ddcolor.hash|https://github.com/facefusion/facefusion-assets/releases/download/models-3.0.0/ddcolor.hash"
+    "span_kendata_x4.onnx|https://github.com/facefusion/facefusion-assets/releases/download/models-3.0.0/span_kendata_x4.onnx"
+    "span_kendata_x4.hash|https://github.com/facefusion/facefusion-assets/releases/download/models-3.0.0/span_kendata_x4.hash"
 )
 
 for item in "${MODELS[@]}"; do

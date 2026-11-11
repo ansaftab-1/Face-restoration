@@ -141,6 +141,13 @@ def init_facefusion_engine() -> None:
         "face_enhancer_model": "gfpgan_1.4",
         "face_enhancer_blend": 80,
         "face_enhancer_weight": 0.5,
+        "frame_colorizer_model": "ddcolor",
+        "frame_colorizer_blend": 100,
+        "frame_colorizer_size": "256x256",
+        "frame_enhancer_model": "span_kendata_x4",
+        "frame_enhancer_blend": 100,
+        "download_providers": ["github", "huggingface"],
+        "download_scope": "lite",
         "execution_device_ids": [0],
         "execution_providers": DEFAULT_PROVIDERS,
         "execution_thread_count": 4,
@@ -613,10 +620,15 @@ async def enhance_photo_instant(
     output_filename = f"{job_id}_enhanced{target_ext}"
     output_path = str(OUTPUTS_DIR / output_filename)
 
-    processors = ["face_enhancer"]
-    if colorize:
+    # Normalize colorize and upscale flags from Form
+    is_colorize = str(colorize).lower() in ("true", "1", "yes", "on")
+    is_upscale = str(upscale).lower() in ("true", "1", "yes", "on")
+
+    processors = []
+    if is_colorize:
         processors.append("frame_colorizer")
-    if upscale:
+    processors.append("face_enhancer")
+    if is_upscale:
         processors.append("frame_enhancer")
 
     job_params = {
