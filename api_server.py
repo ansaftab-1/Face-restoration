@@ -54,7 +54,7 @@ STATIC_DIR = BASE_DIR / "static"
 for d in (UPLOADS_DIR, OUTPUTS_DIR, MODELS_DIR, STATIC_DIR):
     d.mkdir(parents=True, exist_ok=True)
 
-API_KEY = os.getenv("FACEFUSION_API_KEY", "").strip()
+API_KEY = ""  # Open access - no API key required
 MAX_CONCURRENT_JOBS = int(os.getenv("MAX_CONCURRENT_JOBS", "1"))
 DEFAULT_MEMORY_STRATEGY = os.getenv("FACEFUSION_MEMORY_STRATEGY", "tolerant")
 
@@ -161,12 +161,8 @@ def init_facefusion_engine() -> None:
 
 
 def verify_api_key(x_api_key: Optional[str] = Header(default=None, alias="X-API-Key")) -> None:
-    """Optional API Key security check if FACEFUSION_API_KEY environment variable is set."""
-    if API_KEY and x_api_key != API_KEY:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or missing X-API-Key header.",
-        )
+    """Public access - API key check disabled."""
+    pass
 
 
 def execute_facefusion_job_sync(job_params: Dict[str, Any]) -> Dict[str, Any]:
@@ -616,13 +612,6 @@ async def enhance_photo_instant(
     Upload an old, blurry, or low-resolution photo.
     Restores facial details (GFPGAN), optionally colorizes B&W photos, and upscales resolution.
     """
-    provided_key = (x_api_key or api_key or "").strip()
-    if API_KEY and provided_key != API_KEY:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or missing API key.",
-        )
-
     job_id = f"photo_{uuid.uuid4().hex[:12]}"
     target_path = save_upload_file(file, f"{job_id}_raw")
     target_ext = Path(target_path).suffix.lower()
